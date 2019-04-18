@@ -164,7 +164,6 @@ class TileMap {
       array[3][3] = center;
       this.rows = array.length;
       this.cols = array[0].length;
-      console.log(this.array);
    }
 
    getTile(i, j) {

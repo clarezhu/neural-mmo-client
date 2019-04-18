@@ -174,6 +174,11 @@ class Engine {
       return false;
    }
 
+   follow(player) {
+      // TODO: Test this
+      this.controls.target.set(player);
+   }
+
    update(delta) {
       this.controls.update( delta );
       this.renderer.render( this.scene, this.camera );

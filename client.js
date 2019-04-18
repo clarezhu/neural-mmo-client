@@ -11,31 +11,25 @@ var CURRENT_VIEW = views.CLIENT;
 
 
 THREE.Object3D.prototype.rotateAroundWorldAxis = function() {
-
     // rotate object around axis in world space (the axis passes through point)
     // axis is assumed to be normalized
     // assumes object does not have a rotated parent
-
     var q = new THREE.Quaternion();
 
     return function rotateAroundWorldAxis( point, axis, angle ) {
-
         q.setFromAxisAngle( axis, angle );
-
         this.applyQuaternion( q );
-
         this.position.sub( point );
         this.position.applyQuaternion( q );
         this.position.add( point );
-
         return this;
-
     }
-
 }();
+
 
 class Client{
    // interface for client, viewer, and counts
+
    constructor (my_container) {
       this.engine = new engineM.Engine(modes.ADMIN, client_container);
       my_container.innerHTML = ""; // get rid of the text after loading
@@ -54,7 +48,7 @@ class Client{
       this.tick = 0
       this.rotateTime = 0
       this.r = 2750
-      
+
       this.controls = this.engine.controls
       this.camera   = this.engine.camera
       this.camera.position.set(this.axPos, 4000, this.axPos)
@@ -67,6 +61,7 @@ class Client{
       this.handler.updateFast();
       this.updatePacket();
 
+      // For demo visualization
       //this.engine.scene.rotateAroundWorldAxis(this.p, this.ax, 0.0025)
       /*
       if (this.tick > 200) {
@@ -84,17 +79,20 @@ class Client{
          packet = JSON.parse(packet);
 
          var map = packet['map']
-         if (this.init) { 
+         if (this.init) {
             this.terrain = new terrainM.Terrain(map, this.engine);
             this.values = new valuesM.Values(this.terrain.material);
             this.counts = new countsM.Counts(this.terrain.material)
+
             displayOnlyCurrent(client.engine);
             this.values.update(map, packet['values']);
             this.counts.update(packet['counts']);
             this.init = false;
          }
+
          this.handler.updateData(packet['ent']);
          this.terrain.update(map)
+
          if (CURRENT_VIEW == views.VALUES) {
             this.values.update(map, packet['values']);
          }
@@ -120,28 +118,27 @@ class Client{
       }
    }
 
-   onMouseDown(event) {
-      // handle player event first
+   raycastClosestPlayer(x, y) {
       var minDistance = 1000000; // large number
-      var minPlayer = null;
-
+      var closest = null;
       for (var id in this.handler.players) {
-         // Player subclasses Object3D
          var player = this.handler.players[id];
-         var coords = this.engine.raycast(event.clientX, event.clientY,
-                 player);
+         var coords = this.engine.raycast(x, y, player);
          if (coords) {
             var distance = this.engine.camera.position.distanceTo(coords);
             if (distance < minDistance) {
                minDistance = distance;
-               minPlayer = player;
+               closest = player;
             }
          }
       }
+      return closest;
+   }
 
+   onMouseDown(event) {
+      // handle player event first
+      var minPlayer = this.raycastClosestPlayer(event.clientX, event.clientY);
       if (minPlayer) {
-         // now we've identified the closest player
-         console.log("Clicked player", minPlayer.entID);
          if (!box) {
             box = new entityM.EntityBox();
          }
@@ -149,14 +146,15 @@ class Client{
          box.showAll();
 
          if (this.engine.mode == modes.SPECTATOR) {
-            // follow this player
+            this.engine.follow(minPlayer);
          }
       }
 
       // then handle translate event (if self is player)
       if (this.engine.mode == modes.PLAYER) {
-         //var pos = this.engine.raycast(event.clientX, event.clientY);
-         //this.engine.controls.target.set(pos);
+         var pos = this.engine.raycast(event.clientX, event.clientY,
+               this.engine.mesh);
+         this.engine.controls.target.set(pos);
       }
    }
 }
@@ -194,6 +192,9 @@ function onKeyDown(event) {
       case 84: // T
          toggleVisualizers();
          break;
+      case 27: // ESC
+         // TODO: Bring up blocker
+         break;
    }
 }
 
@@ -214,7 +215,6 @@ function init() {
    client_container.appendChild(stats.dom);
 
    // Start by setting these to none
-
    var blocker = document.getElementById("blocker");
    var instructions = document.getElementById("instructions");
 
@@ -235,82 +235,9 @@ function init() {
 function animate() {
    requestAnimationFrame( animate );
    client.update();
-   stats.update();
    if (stats) { stats.update();}
    if (box) { box.update();}
 }
 
 // Main
 init();
-
-
-
-            /*
-            var pkt1 = {
-               'pos': [18, 11],
-               'entID': 394,
-               'color':'#ff8000',
-               'name': 'Neural_394',
-               'food':25, 
-               'water':12,
-               'health':16,
-               'maxFood':32,
-               'maxWater':32,
-               'maxHealth':32,
-               'damage':2,
-            }
-
-            var pkt2 = {
-               'pos': [19, 13],
-               'entID': 383,
-               'color':'#8000ff',
-               'name': 'Neural_383',
-               'food':8, 
-               'water':28,
-               'health':23,
-               'maxFood':32,
-               'maxWater':32,
-               'maxHealth':32,
-               'damage':0,
-               'attack':'Range',
-               'target':'394',
-            }
-        
-            var player1 = new playerM.Player(this.handler, 0, pkt1)
-            this.engine.scene.add(player1);
-            player1.updateData(this.engine, pkt1, {})
-            this.player1 = player1
-
-            var player2 = new playerM.Player(this.handler, 0, pkt2)
-            this.engine.scene.add(player2);
-            player2.updateData(this.engine, pkt2, {394: player1})
-            this.player2 = player2
-
-            var attkGeom = new THREE.IcosahedronGeometry(10);
-            var attkMatl = new THREE.MeshBasicMaterial({color: '#0000ff'});
-            var attkMesh = new THREE.Mesh(attkGeom, attkMatl);
-
-            var p2 = player2.obj.position
-            var p1 = player1.obj.position
-            var moveFrac = 0.75
-            var y = 96;
-
-            var x = p1.x + moveFrac * (p2.x - p1.x) + 16;
-            var z = p1.z + moveFrac * (p2.z - p1.z) + 16;
-            var pos = new THREE.Vector3(x, y, z)
-            attkMesh.position.x = x
-            attkMesh.position.y = y
-            attkMesh.position.z = z
-            this.attkMesh = attkMesh
-            this.engine.scene.add(attkMesh);
-
-            var dmg = textsprite.makeTextSprite(2, "200", '#ff0000');
-            dmg.scale.set( 10, 30, 1 );
-            dmg.position.x = p2.x
-            dmg.position.y = p2.y + 128
-            dmg.position.z = p2.z
-            this.dmg = dmg
-            this.engine.scene.add(dmg);
-            */
-
-
