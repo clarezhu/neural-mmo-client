@@ -194,6 +194,7 @@ function onKeyDown(event) {
          break;
       case 27: // ESC
          // TODO: Bring up blocker
+         blocker.style.display = "block";
          break;
    }
 }
@@ -222,7 +223,7 @@ function init() {
 	   client.engine.controls.enabled = true;
 	   client.engine.controls.update();
 
-	   instructions.style.display = "none";
+	   instructions.style.display = "inline";
       blocker.style.display = "none";
    }, false);
 

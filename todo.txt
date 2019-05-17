@@ -1,9 +1,9 @@
 @Taiyaki
 - lightbulb toggle switch, "let there be light"
 - playermode, admin mode, spectator mode
-- add attack map
 - add hitbox
 
++ add attack map
 + add tiling logic
 + Overhead names
 + ES6 imports working
