@@ -1,10 +1,7 @@
-deprecated/*
 deprecated
 *.pyc
-__pycache__/*
 __pycache__
 three.js
-three.js/*
 *.swn
 *.swo
 *.swp
